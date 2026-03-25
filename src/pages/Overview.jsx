@@ -1,0 +1,138 @@
+import { useEffect, useState } from "react";
+import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
+
+import Sidebar from "../components/Sidebar";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import Card from "../components/Card";
+
+export default function Overview() {
+  const { logout } = useAuth();
+
+  const [summary, setSummary] = useState([]);
+  const [models, setModels] = useState([]);
+  const [filters, setFilters] = useState({ years: [] });
+  const [selectedYear, setSelectedYear] = useState("");
+  const [search, setSearch] = useState("");
+
+  useEffect(() => {
+    fetchData();
+  }, [selectedYear]);
+
+  const fetchData = async () => {
+    try {
+      const [summaryRes, modelRes, filterRes] = await Promise.all([
+        api.get("/sales/by-year", {
+          params: { year: selectedYear || undefined },
+        }),
+        api.get("/sales/by-model", {
+          params: { year: selectedYear || undefined },
+        }),
+        api.get("/sales/filters"),
+      ]);
+
+      setSummary(summaryRes.data);
+      setModels(modelRes.data);
+      setFilters(filterRes.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // If a year is selected, find that specific row; otherwise use the latest
+  const latest = selectedYear
+    ? summary.find((r) => String(r.year) === String(selectedYear))
+    : summary[summary.length - 1];
+
+  const formatNumber = (num) =>
+    num ? num.toLocaleString() : "-";
+
+  // Search filter
+  const filteredModels = models.filter((m) =>
+    m.model.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="h-screen flex bg-gray-100">
+      <Sidebar logout={logout} />
+
+      <div className="flex-1 flex flex-col">
+        <Header
+          title="Sales Overview"
+          filters={filters}
+          setSelectedYear={setSelectedYear}
+        />
+
+        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+
+          {/* KPI */}
+          {latest && (
+            <div className="grid grid-cols-4 gap-6">
+              <Card title="Total Units" value={formatNumber(latest.total_units)} />
+              <Card title="Revenue (€)" value={formatNumber(latest.total_revenue)} />
+              <Card title="Avg Price (€)" value={formatNumber(latest.avg_price_eur)} />
+              <Card title="BEV Share (%)" value={formatNumber(latest.avg_bev_share)} />
+            </div>
+          )}
+
+          {/* Table */}
+          <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
+
+            {/* Header Row with Search */}
+            <div className="flex items-center gap-4 p-4 border-b">
+              <h3 className="text-lg font-semibold">
+                Model Performance
+              </h3>
+
+              <input
+                type="text"
+                placeholder="Search model..."
+                className="border p-2 rounded-lg w-64 ml-4"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="sticky top-0 bg-gray-50 border-b">
+                  <tr>
+                    <th className="p-3">Model</th>
+                    <th className="p-3">Year</th>
+                    <th className="p-3">Units</th>
+                    <th className="p-3">Revenue (€)</th>
+                    <th className="p-3">Avg Price (€)</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {filteredModels.length > 0 ? (
+                    filteredModels.map((m, i) => (
+                      <tr key={i} className="border-b hover:bg-gray-50">
+                        <td className="p-3">{m.model}</td>
+                        <td className="p-3">{m.year}</td>
+                        <td className="p-3">{formatNumber(m.total_units)}</td>
+                        <td className="p-3">{formatNumber(m.total_revenue)}</td>
+                        <td className="p-3">{formatNumber(m.avg_price_eur)}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="5" className="p-4 text-center text-gray-500">
+                        No results
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </main>
+
+        <Footer />
+      </div>
+    </div>
+  );
+}

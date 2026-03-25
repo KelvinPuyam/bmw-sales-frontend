@@ -2,6 +2,8 @@ import { createContext, useContext, useState } from "react";
 
 const AuthContext = createContext();
 
+let logoutHandler = null; // global reference
+
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("token"));
 
@@ -15,6 +17,9 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
   };
 
+  // expose logout globally
+  logoutHandler = logout;
+
   return (
     <AuthContext.Provider value={{ token, login, logout }}>
       {children}
@@ -23,3 +28,8 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
+
+// export global logout
+export const triggerLogout = () => {
+  if (logoutHandler) logoutHandler();
+};
