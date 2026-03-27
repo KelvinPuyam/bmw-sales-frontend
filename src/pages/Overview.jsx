@@ -40,13 +40,16 @@ export default function Overview() {
     }
   };
 
-  // If a year is selected, find that specific row; otherwise use the latest
-  const latest = selectedYear
-    ? summary.find((r) => String(r.year) === String(selectedYear))
-    : summary[summary.length - 1];
+  // Backend always returns exactly one row:
+  //   - specific year selected → that year's aggregated row
+  //   - no year selected ("All Years") → one row aggregated across all years (year: 0)
+  const latest = summary[0] ?? null;
 
   const formatNumber = (num) =>
     num ? num.toLocaleString() : "-";
+
+  // Label shown in card headers — "2024" or "All Years"
+  const yearLabel = selectedYear ? selectedYear : "All Years";
 
   // Search filter
   const filteredModels = models.filter((m) =>
