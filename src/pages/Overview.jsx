@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 
@@ -16,25 +16,47 @@ export default function Overview() {
   const [selectedYear, setSelectedYear] = useState("");
   const [search, setSearch] = useState("");
 
+  const cacheRef = useRef({});
+
+  // Fetch filters once
+  useEffect(() => {
+    api.get("/sales/filters")
+      .then((res) => setFilters(res.data))
+      .catch((err) => console.error(err));
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, [selectedYear]);
 
   const fetchData = async () => {
+    const cacheKey = `overview-${selectedYear}`;
+
+    if (cacheRef.current[cacheKey]) {
+      //console.log("FE cache hit");
+      const cached = cacheRef.current[cacheKey];
+      setSummary(cached.summary);
+      setModels(cached.models);
+      return;
+    }
+
     try {
-      const [summaryRes, modelRes, filterRes] = await Promise.all([
+      const [summaryRes, modelRes] = await Promise.all([
         api.get("/sales/by-year", {
           params: { year: selectedYear || undefined },
         }),
         api.get("/sales/by-model", {
           params: { year: selectedYear || undefined },
         }),
-        api.get("/sales/filters"),
       ]);
+
+      cacheRef.current[cacheKey] = {
+        summary: summaryRes.data,
+        models: modelRes.data,
+      };
 
       setSummary(summaryRes.data);
       setModels(modelRes.data);
-      setFilters(filterRes.data);
     } catch (err) {
       console.error(err);
     }
