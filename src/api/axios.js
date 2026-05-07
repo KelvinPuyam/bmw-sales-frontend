@@ -19,7 +19,7 @@ api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response && error.response.status === 401) {
-      triggerLogout(); // 🔥 THIS updates React state
+      triggerLogout(); // This updates React state
     }
     return Promise.reject(error);
   }
