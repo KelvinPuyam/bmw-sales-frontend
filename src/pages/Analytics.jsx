@@ -1,17 +1,30 @@
 import { useEffect, useState } from "react";
-import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
+import {
+  getFilters,
+  getSalesByModel,
+  formatEuro,
+  formatUnits,
+  aggregateByYear,
+  aggregateByModel,
+} from "../services/salesService";
+
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { useAuth } from "../context/AuthContext";
 
 import {
   LineChart, Line,
   BarChart, Bar,
   PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, CartesianGrid,
-  ResponsiveContainer
+  ResponsiveContainer,
 } from "recharts";
+
+const COLORS = [
+  "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
+  "#06b6d4", "#84cc16", "#f97316", "#ec4899", "#6366f1",
+];
 
 export default function Analytics() {
   const { logout } = useAuth();
@@ -21,74 +34,23 @@ export default function Analytics() {
   const [selectedYear, setSelectedYear] = useState("");
 
   useEffect(() => {
-    fetchData();
-    fetchFilters();
+    getSalesByModel()
+      .then(setData)
+      .catch(console.error);
+
+    getFilters()
+      .then(setFilters)
+      .catch(console.error);
   }, []);
 
-  const fetchData = async () => {
-    try {
-      const res = await api.get("/sales/by-model");
-      setData(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchFilters = async () => {
-    try {
-      const res = await api.get("/sales/filters/");
-      setFilters(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Formatters
-  const formatEuro = (num) => {
-    if (num >= 1_000_000_000) return "€" + (num / 1_000_000_000).toFixed(1) + "B";
-    if (num >= 1_000_000) return "€" + (num / 1_000_000).toFixed(1) + "M";
-    if (num >= 1_000) return "€" + (num / 1_000).toFixed(1) + "K";
-    return "€" + num;
-  };
-
-  const formatUnits = (num) => {
-    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1) + "M";
-    if (num >= 1_000) return (num / 1_000).toFixed(1) + "K";
-    return num;
-  };
-
   // ALL CHARTS use FULL DATA (no filter)
-  const yearly = Object.values(
-    data.reduce((acc, curr) => {
-      if (!acc[curr.year]) {
-        acc[curr.year] = { year: curr.year, revenue: 0, units: 0 };
-      }
-      acc[curr.year].revenue += curr.total_revenue;
-      acc[curr.year].units += curr.total_units;
-      return acc;
-    }, {})
-  );
+  const yearly = aggregateByYear(data);
 
   // ONLY PIE uses filtered data
-  const pieData = selectedYear
+  const pieRawData = selectedYear
     ? data.filter((d) => d.year === Number(selectedYear))
     : data;
-
-  const modelDist = Object.values(
-    pieData.reduce((acc, curr) => {
-      if (!acc[curr.model]) {
-        acc[curr.model] = { name: curr.model, value: 0 };
-      }
-      acc[curr.model].value += curr.total_units;
-      return acc;
-    }, {})
-  );
-
-  // 10 colors
-  const COLORS = [
-    "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
-    "#06b6d4", "#84cc16", "#f97316", "#ec4899", "#6366f1"
-  ];
+  const modelDist = aggregateByModel(pieRawData);
 
   return (
     <div className="h-screen flex bg-gray-100">

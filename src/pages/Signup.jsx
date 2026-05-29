@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api/axios";
+import { signupUser } from "../services/authService";
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -17,7 +17,7 @@ export default function Signup() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await api.post("/auth/signup", form);
+    await signupUser(form);
     navigate("/login");
   };
 
@@ -28,22 +28,22 @@ export default function Signup() {
 
         <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
           <input className="border p-2" placeholder="First Name"
-            onChange={(e)=>setForm({...form,first_name:e.target.value})}/>
+            onChange={(e) => setForm({ ...form, first_name: e.target.value })} />
           <input className="border p-2" placeholder="Last Name"
-            onChange={(e)=>setForm({...form,last_name:e.target.value})}/>
+            onChange={(e) => setForm({ ...form, last_name: e.target.value })} />
 
           <input className="col-span-2 border p-2" placeholder="Username"
-            onChange={(e)=>setForm({...form,username:e.target.value})}/>
+            onChange={(e) => setForm({ ...form, username: e.target.value })} />
           <input className="col-span-2 border p-2" placeholder="Email"
-            onChange={(e)=>setForm({...form,email:e.target.value})}/>
+            onChange={(e) => setForm({ ...form, email: e.target.value })} />
 
           <input type="password" className="col-span-2 border p-2" placeholder="Password"
-            onChange={(e)=>setForm({...form,password:e.target.value})}/>
+            onChange={(e) => setForm({ ...form, password: e.target.value })} />
 
           <input className="border p-2" placeholder="Phone"
-            onChange={(e)=>setForm({...form,phone:e.target.value})}/>
+            onChange={(e) => setForm({ ...form, phone: e.target.value })} />
           <input type="date" className="border p-2"
-            onChange={(e)=>setForm({...form,dob:e.target.value})}/>
+            onChange={(e) => setForm({ ...form, dob: e.target.value })} />
 
           <button className="col-span-2 bg-black text-white p-3 rounded">
             Sign Up
@@ -51,7 +51,8 @@ export default function Signup() {
         </form>
 
         <p className="text-sm mt-4 text-center">
-          Already have an account? <Link to="/login" className="text-blue-600 hover:underline">Login</Link>
+          Already have an account?{" "}
+          <Link to="/login" className="text-blue-600 hover:underline">Login</Link>
         </p>
       </div>
     </div>

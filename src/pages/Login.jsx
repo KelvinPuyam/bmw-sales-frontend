@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { loginUser } from "../services/authService";
 
 export default function Login() {
   const [form, setForm] = useState({ username: "", password: "" });
@@ -14,8 +14,8 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await api.post("/auth/login", form);
-      login(res.data.access_token);
+      const token = await loginUser(form);
+      login(token);
       navigate("/overview");
     } catch (err) {
       // Handle different error cases
