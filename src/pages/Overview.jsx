@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
-import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { getFilters, getSalesByYear, getSalesByModel, formatNumber } from "../services/salesService";
 
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
@@ -20,9 +20,9 @@ export default function Overview() {
 
   // Fetch filters once
   useEffect(() => {
-    api.get("/sales/filters")
-      .then((res) => setFilters(res.data))
-      .catch((err) => console.error(err));
+    getFilters()
+      .then(setFilters)
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -41,22 +41,14 @@ export default function Overview() {
     }
 
     try {
-      const [summaryRes, modelRes] = await Promise.all([
-        api.get("/sales/by-year", {
-          params: { year: selectedYear || undefined },
-        }),
-        api.get("/sales/by-model", {
-          params: { year: selectedYear || undefined },
-        }),
+      const [summaryData, modelData] = await Promise.all([
+        getSalesByYear(selectedYear),
+        getSalesByModel(selectedYear),
       ]);
 
-      cacheRef.current[cacheKey] = {
-        summary: summaryRes.data,
-        models: modelRes.data,
-      };
-
-      setSummary(summaryRes.data);
-      setModels(modelRes.data);
+      cacheRef.current[cacheKey] = { summary: summaryData, models: modelData };
+      setSummary(summaryData);
+      setModels(modelData);
     } catch (err) {
       console.error(err);
     }
@@ -66,9 +58,6 @@ export default function Overview() {
   //   - specific year selected → that year's aggregated row
   //   - no year selected ("All Years") → one row aggregated across all years (year: 0)
   const latest = summary[0] ?? null;
-
-  const formatNumber = (num) =>
-    num ? num.toLocaleString() : "-";
 
   // Label shown in card headers — "2024" or "All Years"
   const yearLabel = selectedYear ? selectedYear : "All Years";

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import api from "../api/axios";
+import { useAuth } from "../context/AuthContext";
+import { getMe, updateProfile, changePassword } from "../services/userService";
+
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import { useAuth } from "../context/AuthContext";
 
 export default function Profile() {
   const { logout } = useAuth();
@@ -28,24 +29,16 @@ export default function Profile() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
-    fetchUser();
+    getMe()
+      .then(setUser)
+      .catch((err) => console.error("Failed to load user:", err))
+      .finally(() => setLoading(false));
   }, []);
-
-  const fetchUser = async () => {
-    try {
-      const res = await api.get("/users/me");
-      setUser(res.data);
-    } catch (err) {
-      console.error("Failed to load user:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     try {
-      await api.put("/users/update", user);
+      await updateProfile(user);
       alert("Profile updated successfully");
     } catch (err) {
       console.error(err);
@@ -61,10 +54,7 @@ export default function Profile() {
     }
 
     try {
-      await api.put("/users/change-password", {
-        old_password: password.old,
-        new_password: password.new,
-      });
+      await changePassword({ old_password: password.old, new_password: password.new });
       alert("Password updated successfully");
       setShowPasswordModal(false);
       setPassword({ old: "", new: "", confirm: "" });
